@@ -17,13 +17,29 @@ O [Render](https://render.com) oferece plano gratuito permanente com suporte a N
    - **Build Command:** *(deixe em branco)*
    - **Start Command:** `node server.js`
    - **Plan:** `Free`
-5. Adicione a variável de ambiente:
+5. Adicione as variáveis de ambiente em **Environment**:
    - `WORKSHOP_TOKEN` = `oficina2026` (ou a senha que desejar)
+   - `GITHUB_TOKEN` = `ghp_xxxxxxxxxxxx` (Personal Access Token do GitHub com permissão de escrita no repositório — veja abaixo)
+   - `GITHUB_REPO` = `Acervo-Vivo-Ubatuba/PPQ` (ou o seu repositório)
 6. Clique em **Deploy Web Service**.
+
+### 🔄 Persistência Automática no GitHub (Evitar Perda de Balões no Render):
+No plano gratuito do Render, o disco é efêmero (arquivos novos somem quando a máquina dorme ou faz redeploy).
+Para resolver isso, o aplicativo inclui sincronização em nuvem automática:
+- Sempre que alguém salvar ou remover um balão, o servidor do Render envia os dados automaticamente de volta para o GitHub (`data/annotations.json` e `REGISTRO_FALAS.md`).
+- As mensagens de commit incluem `[skip render] [skip ci]`, impedindo que o Render entre em loop de rebuild.
+- Quando o Render acorda após hibernar, ele busca a versão mais recente do GitHub automaticamente!
+
+**Como gerar o `GITHUB_TOKEN` em 1 minuto:**
+1. No GitHub, vá em **Settings** > **Developer Settings** > **Personal access tokens** > **Tokens (classic)** (ou [github.com/settings/tokens](https://github.com/settings/tokens)).
+2. Clique em **Generate new token (classic)**.
+3. Dê o nome de `AcervoVivo-Render`, marque a opção **`repo`** (Full control of private repositories) e gere o token.
+4. Cole o token na variável `GITHUB_TOKEN` nas configurações de ambiente do seu serviço no Render.
 
 Em 2 minutos você terá:
 - **URL da Galeria Pública:** `https://seu-app.onrender.com/`
 - **URL dos Participantes:** `https://seu-app.onrender.com/participante?token=oficina2026`
+- **Persistência total:** Balões salvos permanentemente no repositório GitHub!
 
 ---
 
