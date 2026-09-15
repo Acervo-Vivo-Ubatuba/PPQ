@@ -1,0 +1,19 @@
+[
+  {
+    "id": "ann_1789434166049_yy2j5",
+    "imageId": "20260914_162942",
+    "author": "Doutor F",
+    "title": "",
+    "balloons": [
+      {
+        "id": "b_1789434157000_oop1",
+        "type": "speech",
+        "text": "ué...",
+        "x": 69.7,
+        "y": 9.4,
+        "tailDirection": "bottom-left"
+      }
+    ],
+    "updatedAt": "2026-09-15T01:02:51.811Z"
+  }
+]

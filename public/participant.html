@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acervo Vivo — Estúdio do Participante</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Google+Sans+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <h1>
+        <span>Acervo Vivo</span>
+        <span class="badge-tag" style="background:#e8f5e9; color:#2e7d32;">Estúdio da Oficina</span>
+      </h1>
+      <p id="app-subtitle">Crie diálogos e intervenções com balões de quadrinhos sobre as fotografias</p>
+    </div>
+
+    <div class="header-actions">
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <label for="participant-name-input" style="font-size:0.85rem; font-weight:600; color:var(--text-muted);">
+          Criador(a):
+        </label>
+        <input type="text" id="participant-name-input" placeholder="Seu nome ou apelido"
+               style="padding:0.4rem 0.75rem; border-radius:6px; border:1px solid var(--border-light); font-size:0.9rem; width:160px;">
+      </div>
+
+      <button type="button" class="btn btn-outline btn-sm" id="btn-how-it-works" title="Instruções de como usar">
+        ❓ Como Funciona
+      </button>
+
+      <a href="/" class="btn btn-outline btn-sm">
+        Ver Galeria Pública 👁️
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <main class="main-content">
+    <div class="section-intro">
+      <div>
+        <h2>Escolha uma Fotografia para Intervir</h2>
+        <p>Clique em uma foto para abrir a mesa de criação. Adicione balões de fala ou pensamento, arraste sobre as personagens e digite o que elas estão dizendo!</p>
+      </div>
+    </div>
+
+    <div class="gallery-grid" id="gallery-grid">
+      <!-- Polaroid Cards dynamically loaded -->
+    </div>
+  </main>
+
+  <!-- Lightbox / Studio Workspace Modal -->
+  <div class="lightbox-modal" id="lightbox-modal">
+    <div class="lightbox-header">
+      <div class="lightbox-title-wrap">
+        <h3 id="modal-image-title">Mesa de Criação</h3>
+        <p>Arraste os balões sobre as personagens e clique no texto para editar</p>
+      </div>
+      <div class="lightbox-actions">
+        <button type="button" class="btn btn-primary btn-sm" id="btn-add-speech">
+          💬 + Balão de Fala
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-add-thought" style="color:#fff; border-color:rgba(255,255,255,0.3);">
+          💭 + Pensamento
+        </button>
+        <button type="button" class="btn btn-gold btn-sm" id="btn-save-contribution">
+          💾 Salvar Falas
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-clear-balloons" style="color:#fca5a5; border-color:rgba(252,165,165,0.4);" title="Limpar todos os balões desta foto e recomeçar do zero">
+          🗑️ Limpar
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-download-snapshot" style="color:#fff; border-color:rgba(255,255,255,0.3);">
+          📸 Baixar Snapshot
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-close-modal" style="color:#fff; border-color:rgba(255,255,255,0.3);">
+          ✕ Fechar
+        </button>
+      </div>
+    </div>
+
+    <div class="lightbox-body">
+      <div class="canvas-stage" id="canvas-stage">
+        <img src="" alt="Foto para intervenção" class="stage-base-img" id="stage-img">
+        <!-- Draggable Balloons rendered here by ComicEngine -->
+      </div>
+    </div>
+
+    <div class="lightbox-footer">
+      <div style="font-size:0.85rem; color:#bbb;">
+        💡 <em>Dica:</em> Você pode alternar a ponta do balão (rabicho) para apontar com precisão para a boca de cada personagem.
+      </div>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <span id="save-status-indicator" style="font-size:0.85rem; color:#a3e635;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding & Welcome Overlay Modal -->
+  <div class="onboarding-overlay" id="onboarding-overlay">
+    <div class="onboarding-card">
+      <button type="button" class="onboarding-close-btn" id="onboarding-close-btn" title="Fechar" style="display:none;">✕</button>
+
+      <div class="onboarding-header">
+        <span class="onboarding-badge">Oficina Acervo Vivo</span>
+        <h2>Bem-vindo(a) ao Estúdio!</h2>
+        <p>Crie intervenções com balões de quadrinhos sobre as fotografias para registrar e ressignificar nossas memórias.</p>
+      </div>
+
+      <!-- 4 Visual Steps -->
+      <div class="onboarding-steps">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <h4>Escolha uma foto</h4>
+            <p>Clique em qualquer fotografia na galeria para abrir a mesa de criação.</p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <h4>Crie balões de fala</h4>
+            <p>Adicione falas (💬) ou pensamentos (💭) e digite as vozes das personagens.</p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <h4>Posicione e aponte</h4>
+            <p>Arraste os balões e alterne o lado do rabicho (⇄) apontando para quem fala.</p>
+          </div>
+        </div>
+
+        <div class="step-card">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <h4>Salve e baixe</h4>
+            <p>Grave suas falas para a galeria pública e baixe sua polaroid para guardar!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Identification & Access Form -->
+      <form id="onboarding-form" class="onboarding-form-box">
+        <div class="form-group">
+          <label for="onboarding-name-input">
+            <span>Como você se chama?</span>
+            <span class="required-tag">* obrigatório</span>
+          </label>
+          <p class="form-hint">Seu nome ou apelido ficará registrado como autor(a) das falas que você criar nesta oficina.</p>
+          <input type="text" id="onboarding-name-input" class="onboarding-input" placeholder="Digite seu nome ou apelido (ex: Mariana)" required autocomplete="name">
+        </div>
+
+        <div class="form-group" id="onboarding-token-group" style="display:none;">
+          <label for="onboarding-token-input">
+            <span>Senha / Token da Oficina:</span>
+            <span class="required-tag">* obrigatório</span>
+          </label>
+          <p class="form-hint">Insira a senha de acesso fornecida pela coordenação da oficina.</p>
+          <input type="text" id="onboarding-token-input" class="onboarding-input" placeholder="Digite o token da oficina (ex: oficina2026)" autocomplete="off">
+        </div>
+
+        <div id="onboarding-error-msg" class="onboarding-error" style="display:none;"></div>
+
+        <button type="submit" class="btn btn-primary btn-onboarding-submit" id="btn-onboarding-submit">
+          Começar a Criar 🚀
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hidden token modal fallback if needed -->
+  <div id="token-modal" style="display:none;"></div>
+
+  <!-- Toast Notice -->
+  <div class="toast-notice" id="toast-notice"></div>
+
+  <script type="module">
+    import { ComicEngine } from '/js/comic-engine.js';
+    import { exportSnapshot } from '/js/canvas-export.js';
+
+    let images = [];
+    let allAnnotations = [];
+    let currentImage = null;
+    let currentAnnotationId = null;
+    let workshopToken = '';
+
+    const stageEl = document.getElementById('canvas-stage');
+    const stageImg = document.getElementById('stage-img');
+    const modalEl = document.getElementById('lightbox-modal');
+    const modalTitle = document.getElementById('modal-image-title');
+    const galleryGrid = document.getElementById('gallery-grid');
+    const toastEl = document.getElementById('toast-notice');
+    const onboardingOverlay = document.getElementById('onboarding-overlay');
+    const onboardingCloseBtn = document.getElementById('onboarding-close-btn');
+    const onboardingForm = document.getElementById('onboarding-form');
+    const onboardingNameInput = document.getElementById('onboarding-name-input');
+    const onboardingTokenGroup = document.getElementById('onboarding-token-group');
+    const onboardingTokenInput = document.getElementById('onboarding-token-input');
+    const onboardingErrorMsg = document.getElementById('onboarding-error-msg');
+    const btnHowItWorks = document.getElementById('btn-how-it-works');
+
+    const authorInput = document.getElementById('participant-name-input');
+    const saveIndicator = document.getElementById('save-status-indicator');
+
+    // Remember author name across sessions
+    const savedAuthor = localStorage.getItem('acervo_author_name');
+    if (savedAuthor) authorInput.value = savedAuthor;
+    authorInput.addEventListener('input', () => {
+      const val = authorInput.value.trim();
+      if (val) localStorage.setItem('acervo_author_name', val);
+    });
+
+    // Initialize Comic Engine in editable participant mode
+    const comicEngine = new ComicEngine(stageEl, {
+      editable: true,
+      onChanged: () => {
+        saveIndicator.textContent = '● Alterações não salvas';
+        saveIndicator.style.color = '#facc15';
+      }
+    });
+
+    function showToast(msg, type = 'success') {
+      toastEl.textContent = msg;
+      toastEl.className = `toast-notice ${type} show`;
+      setTimeout(() => toastEl.classList.remove('show'), 3500);
+    }
+
+    function showOnboardingError(msg) {
+      onboardingErrorMsg.textContent = msg;
+      onboardingErrorMsg.style.display = 'block';
+    }
+
+    function hideOnboardingError() {
+      onboardingErrorMsg.textContent = '';
+      onboardingErrorMsg.style.display = 'none';
+    }
+
+    function openOnboarding(canClose = false) {
+      hideOnboardingError();
+      const currentName = authorInput.value.trim() || localStorage.getItem('acervo_author_name') || '';
+      onboardingNameInput.value = currentName;
+
+      if (canClose && currentName) {
+        onboardingCloseBtn.style.display = 'flex';
+      } else {
+        onboardingCloseBtn.style.display = 'none';
+      }
+
+      // If token is already validated, hide token field
+      if (workshopToken) {
+        onboardingTokenGroup.style.display = 'none';
+        onboardingTokenInput.required = false;
+      } else {
+        onboardingTokenGroup.style.display = 'block';
+        onboardingTokenInput.required = true;
+      }
+
+      onboardingOverlay.classList.add('active');
+      setTimeout(() => {
+        if (!currentName) {
+          onboardingNameInput.focus();
+        } else if (!workshopToken) {
+          onboardingTokenInput.focus();
+        }
+      }, 100);
+    }
+
+    function closeOnboarding() {
+      const nameVal = onboardingNameInput.value.trim();
+      if (nameVal) {
+        localStorage.setItem('acervo_author_name', nameVal);
+        authorInput.value = nameVal;
+      }
+      onboardingOverlay.classList.remove('active');
+    }
+
+    onboardingCloseBtn.addEventListener('click', () => {
+      const currentName = authorInput.value.trim() || localStorage.getItem('acervo_author_name');
+      if (currentName) {
+        closeOnboarding();
+      } else {
+        showOnboardingError('Por favor, informe como você se chama antes de fechar.');
+      }
+    });
+
+    btnHowItWorks.addEventListener('click', () => {
+      openOnboarding(true);
+    });
+
+    // Handle Onboarding Form Submit
+    onboardingForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideOnboardingError();
+
+      const nameVal = onboardingNameInput.value.trim();
+      if (!nameVal) {
+        showOnboardingError('Por favor, digite como você se chama para continuar.');
+        onboardingNameInput.focus();
+        return;
+      }
+
+      // If token not verified yet, verify it now
+      if (!workshopToken) {
+        const enteredToken = onboardingTokenInput.value.trim();
+        if (!enteredToken) {
+          showOnboardingError('Por favor, insira o token da oficina.');
+          onboardingTokenInput.focus();
+          return;
+        }
+
+        const verifyRes = await fetch(`/api/verify-token?token=${encodeURIComponent(enteredToken)}`).then(r => r.json()).catch(() => ({ valid: false }));
+        if (!verifyRes.valid) {
+          showOnboardingError('Token da oficina incorreto. Verifique a senha com a coordenação.');
+          onboardingTokenInput.select();
+          return;
+        }
+
+        workshopToken = enteredToken;
+        sessionStorage.setItem('acervo_workshop_token', enteredToken);
+      }
+
+      // Save Author Name & Complete Onboarding
+      localStorage.setItem('acervo_author_name', nameVal);
+      localStorage.setItem('acervo_onboarding_completed', 'true');
+      authorInput.value = nameVal;
+
+      onboardingOverlay.classList.remove('active');
+      onboardingCloseBtn.style.display = 'flex';
+      showToast(`Bem-vindo(a), ${nameVal}! Escolha uma foto para começar.`);
+
+      if (!images.length) {
+        loadData();
+      }
+    });
+
+    async function loadData() {
+      try {
+        const [imgRes, annRes] = await Promise.all([
+          fetch('/api/images').then(r => r.json()),
+          fetch('/api/annotations').then(r => r.json())
+        ]);
+
+        images = imgRes.images || [];
+        allAnnotations = annRes.annotations || [];
+        renderGallery();
+      } catch (err) {
+        console.error('Erro ao carregar estúdio:', err);
+        showToast('Erro ao carregar fotos da oficina.', 'error');
+      }
+    }
+
+    function renderGallery() {
+      galleryGrid.innerHTML = '';
+      if (!images.length) {
+        galleryGrid.innerHTML = '<p style="color: #666; grid-column: 1/-1;">Nenhuma imagem encontrada na pasta da oficina.</p>';
+        return;
+      }
+
+      images.forEach(img => {
+        const imgAnnotations = allAnnotations.filter(a => a.imageId === img.id);
+        const count = imgAnnotations.length;
+
+        const card = document.createElement('div');
+        card.className = 'polaroid-card';
+        card.innerHTML = `
+          <div class="polaroid-img-wrap">
+            <img src="${img.url}" alt="${img.filename}" loading="lazy">
+          </div>
+          <div class="polaroid-meta">
+            <span class="polaroid-title">${img.filename.replace(/^Copy of /, '').replace(/\.jpg$/, '')}</span>
+            <span class="dialogue-pill ${count === 0 ? 'empty' : ''}">
+              💬 ${count} ${count === 1 ? 'fala salva' : 'falas salvas'}
+            </span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => openEditor(img));
+        galleryGrid.appendChild(card);
+      });
+    }
+
+    function openEditor(img) {
+      currentImage = img;
+      modalTitle.textContent = img.filename.replace(/^Copy of /, '').replace(/\.jpg$/, '');
+      stageImg.src = img.url;
+
+      // Check if user already contributed to this image
+      const myAuthorName = authorInput.value.trim().toLowerCase();
+      const existing = allAnnotations.find(a => 
+        a.imageId === img.id && 
+        myAuthorName && 
+        a.author && 
+        a.author.toLowerCase() === myAuthorName
+      );
+
+      if (existing) {
+        currentAnnotationId = existing.id;
+        comicEngine.setBalloons(existing.balloons || []);
+        saveIndicator.textContent = `✓ Carregada sua versão anterior (${existing.balloons?.length || 0} balões)`;
+        saveIndicator.style.color = '#a3e635';
+      } else {
+        currentAnnotationId = null;
+        comicEngine.clear();
+        saveIndicator.textContent = '';
+        // Automatically add one initial balloon to get started
+        comicEngine.addBalloon({
+          type: 'speech',
+          text: '',
+          x: 50,
+          y: 40,
+          tailDirection: 'bottom-left'
+        });
+      }
+
+      modalEl.classList.add('active');
+    }
+
+    // Add Speech Balloon
+    document.getElementById('btn-add-speech').addEventListener('click', () => {
+      comicEngine.addBalloon({
+        type: 'speech',
+        text: '',
+        x: 40 + Math.random() * 20,
+        y: 35 + Math.random() * 20,
+        tailDirection: 'bottom-left'
+      });
+    });
+
+    // Add Thought Balloon
+    document.getElementById('btn-add-thought').addEventListener('click', () => {
+      comicEngine.addBalloon({
+        type: 'thought',
+        text: '',
+        x: 40 + Math.random() * 20,
+        y: 35 + Math.random() * 20,
+        tailDirection: 'bottom-left'
+      });
+    });
+
+    // Save Contribution
+    document.getElementById('btn-save-contribution').addEventListener('click', async () => {
+      if (!currentImage) return;
+
+      const author = authorInput.value.trim();
+      if (!author) {
+        showToast('Por favor, informe como você se chama antes de salvar!', 'error');
+        openOnboarding(false);
+        return;
+      }
+
+      const balloons = comicEngine.getBalloonsData();
+      const btn = document.getElementById('btn-save-contribution');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Salvando...';
+      btn.disabled = true;
+
+      try {
+        const payload = {
+          id: currentAnnotationId,
+          imageId: currentImage.id,
+          author: author,
+          balloons: balloons
+        };
+
+        const res = await fetch(`/api/annotations?token=${encodeURIComponent(workshopToken)}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-workshop-token': workshopToken
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          currentAnnotationId = data.annotation.id;
+          saveIndicator.textContent = '✓ Falas salvas com sucesso!';
+          saveIndicator.style.color = '#a3e635';
+          showToast('Intervenção salva! Visível para todos na galeria.');
+
+          // Refresh annotations list
+          const annRes = await fetch('/api/annotations').then(r => r.json());
+          allAnnotations = annRes.annotations || [];
+          renderGallery();
+        } else {
+          showToast(data.error || 'Erro ao salvar.', 'error');
+        }
+      } catch (err) {
+        console.error('Erro ao salvar falas:', err);
+        showToast('Erro de conexão ao salvar.', 'error');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // Clear Balloons / Restart from Scratch
+    document.getElementById('btn-clear-balloons').addEventListener('click', async () => {
+      const balloons = comicEngine.getBalloonsData();
+      if (balloons.length === 0 && !currentAnnotationId) {
+        showToast('A tela já está sem balões.');
+        return;
+      }
+
+      if (!confirm('Deseja apagar todos os balões desta fotografia e recomeçar do zero?')) {
+        return;
+      }
+
+      comicEngine.clear();
+
+      // If there was an existing saved version on the server
+      if (currentAnnotationId) {
+        const deleteServer = confirm('Deseja também remover a sua versão salva do acervo público?');
+        if (deleteServer) {
+          try {
+            await fetch(`/api/annotations?token=${encodeURIComponent(workshopToken)}&id=${currentAnnotationId}`, {
+              method: 'DELETE',
+              headers: { 'x-workshop-token': workshopToken }
+            });
+            currentAnnotationId = null;
+            saveIndicator.textContent = '';
+            showToast('Versão anterior removida do acervo.');
+            // Refresh gallery
+            const annRes = await fetch('/api/annotations').then(r => r.json());
+            allAnnotations = annRes.annotations || [];
+            renderGallery();
+          } catch (e) {
+            console.error(e);
+          }
+        } else {
+          saveIndicator.textContent = '● Balões limpos na tela (não salvo)';
+          saveIndicator.style.color = '#facc15';
+          showToast('Balões apagados da tela.');
+        }
+      } else {
+        saveIndicator.textContent = '';
+        showToast('Mesa de criação limpa!');
+      }
+    });
+
+    // Download Polaroid / Snapshot
+    document.getElementById('btn-download-snapshot').addEventListener('click', async () => {
+      if (!currentImage || !stageImg) return;
+
+      const btn = document.getElementById('btn-download-snapshot');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Gerando...';
+      btn.disabled = true;
+
+      try {
+        await exportSnapshot({
+          imgElement: stageImg,
+          balloons: comicEngine.getBalloonsData(),
+          stageElement: stageEl,
+          author: authorInput.value.trim() || 'Participante',
+          includeAttribution: false // Participant custom clean polaroid export
+        });
+        showToast('Snapshot baixado para seu dispositivo!');
+      } catch (err) {
+        console.error('Erro ao gerar snapshot:', err);
+        showToast('Erro ao exportar snapshot.', 'error');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      modalEl.classList.remove('active');
+      comicEngine.clear();
+      currentImage = null;
+    });
+
+    // Close on backdrop click
+    modalEl.addEventListener('click', (e) => {
+      if (e.target === modalEl) {
+        modalEl.classList.remove('active');
+        comicEngine.clear();
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modalEl.classList.contains('active')) {
+        modalEl.classList.remove('active');
+        comicEngine.clear();
+      }
+    });
+
+    async function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let token = urlParams.get('token') || sessionStorage.getItem('acervo_workshop_token');
+
+      let isTokenValid = false;
+      if (token) {
+        try {
+          const verifyRes = await fetch(`/api/verify-token?token=${encodeURIComponent(token)}`).then(r => r.json());
+          if (verifyRes.valid) {
+            workshopToken = token;
+            sessionStorage.setItem('acervo_workshop_token', token);
+            isTokenValid = true;
+          }
+        } catch (err) {
+          console.warn('Erro ao verificar token:', err);
+        }
+      }
+
+      const savedAuthor = localStorage.getItem('acervo_author_name');
+      const onboardingCompleted = localStorage.getItem('acervo_onboarding_completed');
+
+      if (savedAuthor) {
+        authorInput.value = savedAuthor;
+      }
+
+      // If token is invalid OR author name/onboarding is missing -> Open onboarding overlay
+      if (!isTokenValid || !savedAuthor || !onboardingCompleted) {
+        openOnboarding(Boolean(savedAuthor && isTokenValid));
+      } else {
+        loadData();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acervo Vivo — Galeria Pública</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Google+Sans+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-brand">
+      <h1>
+        <span>Acervo Vivo</span>
+        <span class="badge-tag">Galeria Pública</span>
+      </h1>
+      <p id="app-subtitle">Paz Para Quem? — Registros Fotográficos da Oficina</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="attribution-badge" title="Todas as intervenções disponibilizadas sob licença aberta">
+        <span>Licença</span>
+        <strong>CC-BY 4.0</strong>
+        <span>• #acervovivoubatuba</span>
+      </div>
+      <a href="/registros.md" target="_blank" class="btn btn-outline btn-sm" title="Ver documento Markdown com todos os registros e falas da oficina">
+        📜 Registro Markdown
+      </a>
+      <a href="/participante" class="btn btn-primary btn-sm" id="btn-participant-link">
+        Área do Participante ✍️
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Grid -->
+  <main class="main-content">
+    <div class="section-intro">
+      <div>
+        <h2>Registros da Oficina</h2>
+        <p>Clique em qualquer imagem para visualizar os diálogos e balões de fala criados pelos participantes, alternar entre versões ou gerar um snapshot com atribuição aberta.</p>
+      </div>
+    </div>
+
+    <div class="gallery-grid" id="gallery-grid">
+      <!-- Polaroid Cards dynamically loaded -->
+    </div>
+  </main>
+
+  <!-- Lightbox Modal -->
+  <div class="lightbox-modal" id="lightbox-modal">
+    <div class="lightbox-header">
+      <div class="lightbox-title-wrap">
+        <h3 id="modal-image-title">Registro Fotográfico</h3>
+        <p id="modal-author-info">Selecione uma contribuição abaixo</p>
+      </div>
+      <div class="lightbox-actions">
+        <button type="button" class="btn btn-gold btn-sm" id="btn-export-snapshot">
+          📸 Baixar Snapshot (CC-BY)
+        </button>
+        <button type="button" class="btn btn-outline btn-sm" id="btn-close-modal" style="color: #fff; border-color: rgba(255,255,255,0.3);">
+          ✕ Fechar
+        </button>
+      </div>
+    </div>
+
+    <div class="lightbox-body">
+      <div class="canvas-stage" id="canvas-stage">
+        <img src="" alt="Foto em alta resolução" class="stage-base-img" id="stage-img">
+        <!-- Balloons will be rendered here by ComicEngine -->
+      </div>
+    </div>
+
+    <div class="lightbox-footer">
+      <div class="version-bar-wrap">
+        <div class="version-bar-header">
+          <div>
+            <strong>💬 Falas & Versões dos Participantes</strong>
+            <span id="version-count-badge" style="font-size:0.75rem; color:#94a3b8; margin-left:0.4rem;"></span>
+          </div>
+          <div class="attribution-badge">
+            <span>Licença:</span>
+            <strong id="footer-license-text">CC-BY 4.0</strong>
+            <span id="footer-attribution-text">• #acervovivoubatuba</span>
+          </div>
+        </div>
+
+        <div class="version-pills-container">
+          <button type="button" class="version-nav-arrow" id="btn-prev-version" title="Versão anterior (ou Seta Esquerda ←)">‹</button>
+          <div class="version-pills-list" id="version-pills-list">
+            <!-- Dynamically generated version pills -->
+          </div>
+          <button type="button" class="version-nav-arrow" id="btn-next-version" title="Próxima versão (ou Seta Direita →)">›</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notice -->
+  <div class="toast-notice" id="toast-notice"></div>
+
+  <script type="module">
+    import { ComicEngine } from '/js/comic-engine.js';
+    import { exportSnapshot } from '/js/canvas-export.js';
+
+    let images = [];
+    let allAnnotations = [];
+    let currentImage = null;
+    let currentImageAnnotations = [];
+    let activeAnnotation = null;
+    let config = {
+      attributionText: '#acervovivoubatuba',
+      licenseText: 'CC-BY 4.0'
+    };
+
+    const stageEl = document.getElementById('canvas-stage');
+    const stageImg = document.getElementById('stage-img');
+    const modalEl = document.getElementById('lightbox-modal');
+    const versionPillsList = document.getElementById('version-pills-list');
+    const versionCountBadge = document.getElementById('version-count-badge');
+    const btnPrevVersion = document.getElementById('btn-prev-version');
+    const btnNextVersion = document.getElementById('btn-next-version');
+    let currentVersionIndex = 0;
+    const modalTitle = document.getElementById('modal-image-title');
+    const modalAuthorInfo = document.getElementById('modal-author-info');
+    const galleryGrid = document.getElementById('gallery-grid');
+    const toastEl = document.getElementById('toast-notice');
+
+    // Initialize Comic Engine in read-only mode
+    const comicEngine = new ComicEngine(stageEl, { editable: false });
+
+    function showToast(msg, type = 'success') {
+      toastEl.textContent = msg;
+      toastEl.className = `toast-notice ${type} show`;
+      setTimeout(() => toastEl.classList.remove('show'), 3500);
+    }
+
+    async function init() {
+      try {
+        const [cfgRes, imgRes, annRes] = await Promise.all([
+          fetch('/api/config').then(r => r.json()),
+          fetch('/api/images').then(r => r.json()),
+          fetch('/api/annotations').then(r => r.json())
+        ]);
+
+        config = cfgRes;
+        images = imgRes.images || [];
+        allAnnotations = annRes.annotations || [];
+
+        document.getElementById('footer-license-text').textContent = config.licenseText || 'CC-BY 4.0';
+        document.getElementById('footer-attribution-text').textContent = `• ${config.attributionText || '#acervovivoubatuba'}`;
+
+        renderGallery();
+      } catch (err) {
+        console.error('Falha ao carregar dados:', err);
+        showToast('Erro ao carregar dados da galeria.', 'error');
+      }
+    }
+
+    function renderGallery() {
+      galleryGrid.innerHTML = '';
+      if (!images.length) {
+        galleryGrid.innerHTML = '<p style="color: #666; grid-column: 1/-1;">Nenhuma imagem encontrada na pasta da oficina.</p>';
+        return;
+      }
+
+      images.forEach(img => {
+        const imgAnnotations = allAnnotations.filter(a => a.imageId === img.id);
+        const count = imgAnnotations.length;
+
+        const card = document.createElement('div');
+        card.className = 'polaroid-card';
+        card.innerHTML = `
+          <div class="polaroid-img-wrap">
+            <img src="${img.url}" alt="${img.filename}" loading="lazy">
+          </div>
+          <div class="polaroid-meta">
+            <span class="polaroid-title">${img.filename.replace(/^Copy of /, '').replace(/\.jpg$/, '')}</span>
+            <span class="dialogue-pill ${count === 0 ? 'empty' : ''}">
+              💬 ${count} ${count === 1 ? 'versão' : 'versões'}
+            </span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => openImage(img));
+        galleryGrid.appendChild(card);
+      });
+    }
+
+    function openImage(img) {
+      currentImage = img;
+      modalTitle.textContent = img.filename.replace(/^Copy of /, '').replace(/\.jpg$/, '');
+      stageImg.src = img.url;
+
+      currentImageAnnotations = allAnnotations.filter(a => a.imageId === img.id);
+
+      renderVersionPills();
+
+      // Default to first contribution if available, otherwise original
+      if (currentImageAnnotations.length > 0) {
+        selectVersionByIndex(1);
+      } else {
+        selectVersionByIndex(0);
+      }
+
+      modalEl.classList.add('active');
+    }
+
+    function renderVersionPills() {
+      versionPillsList.innerHTML = '';
+      const total = currentImageAnnotations.length;
+      versionCountBadge.textContent = total === 0 ? '— Nenhuma fala criada ainda' : `— ${total} ${total === 1 ? 'versão disponível' : 'versões disponíveis'}`;
+
+      // 1. Original (Sem balões)
+      const origPill = document.createElement('button');
+      origPill.type = 'button';
+      origPill.className = 'version-pill';
+      origPill.dataset.index = '0';
+      origPill.innerHTML = `
+        <span class="pill-badge">📷</span>
+        <span class="pill-author">Original</span>
+        <span class="pill-quote">Foto sem balões</span>
+      `;
+      origPill.addEventListener('click', () => selectVersionByIndex(0));
+      versionPillsList.appendChild(origPill);
+
+      // 2. Each participant contribution
+      currentImageAnnotations.forEach((ann, idx) => {
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'version-pill';
+        pill.dataset.index = String(idx + 1);
+
+        // Find preview snippet of what was written
+        const firstText = ann.balloons?.find(b => b.text && b.text.trim())?.text || '';
+        const snippetText = firstText ? `“${firstText}”` : `(${ann.balloons?.length || 0} falas)`;
+
+        pill.innerHTML = `
+          <span class="pill-badge">${idx + 1}</span>
+          <span class="pill-author">${ann.author || 'Participante'}</span>
+          <span class="pill-quote" title="${firstText || 'Diálogo'}">${snippetText}</span>
+        `;
+        pill.addEventListener('click', () => selectVersionByIndex(idx + 1));
+        versionPillsList.appendChild(pill);
+      });
+
+      if (total === 0) {
+        const emptyHint = document.createElement('div');
+        emptyHint.className = 'empty-versions-hint';
+        emptyHint.innerHTML = `<span>Essa foto ainda não tem diálogos.</span> <a href="/participante" style="color:var(--accent-gold); font-weight:600; text-decoration:underline;">Criar balões agora ✏️</a>`;
+        versionPillsList.appendChild(emptyHint);
+      }
+
+      updateNavArrowStates();
+    }
+
+    function selectVersionByIndex(index) {
+      currentVersionIndex = index;
+      const allPills = versionPillsList.querySelectorAll('.version-pill');
+      allPills.forEach(p => {
+        const pIdx = Number(p.dataset.index);
+        if (pIdx === index) {
+          p.classList.add('active');
+          p.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+        } else {
+          p.classList.remove('active');
+        }
+      });
+
+      if (index === 0) {
+        applyAnnotation(null);
+      } else {
+        const ann = currentImageAnnotations[index - 1];
+        applyAnnotation(ann || null);
+      }
+
+      updateNavArrowStates();
+    }
+
+    function updateNavArrowStates() {
+      const maxIndex = currentImageAnnotations.length;
+      btnPrevVersion.disabled = currentVersionIndex <= 0;
+      btnNextVersion.disabled = currentVersionIndex >= maxIndex;
+    }
+
+    btnPrevVersion.addEventListener('click', () => {
+      if (currentVersionIndex > 0) {
+        selectVersionByIndex(currentVersionIndex - 1);
+      }
+    });
+
+    btnNextVersion.addEventListener('click', () => {
+      if (currentVersionIndex < currentImageAnnotations.length) {
+        selectVersionByIndex(currentVersionIndex + 1);
+      }
+    });
+
+    // Keyboard Arrow navigation (← / →)
+    window.addEventListener('keydown', (e) => {
+      if (!modalEl.classList.contains('active')) return;
+      if (e.key === 'ArrowLeft') {
+        if (currentVersionIndex > 0) {
+          selectVersionByIndex(currentVersionIndex - 1);
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (currentVersionIndex < currentImageAnnotations.length) {
+          selectVersionByIndex(currentVersionIndex + 1);
+        }
+      }
+    });
+
+    function applyAnnotation(annotation) {
+      activeAnnotation = annotation;
+      if (annotation && annotation.balloons) {
+        comicEngine.setBalloons(annotation.balloons);
+        modalAuthorInfo.textContent = `Intervenção por: ${annotation.author || 'Participante'} • ${annotation.balloons.length} balão(ões)`;
+      } else {
+        comicEngine.clear();
+        modalAuthorInfo.textContent = 'Fotografia original (sem balões)';
+      }
+    }
+
+    document.getElementById('btn-close-modal').addEventListener('click', () => {
+      modalEl.classList.remove('active');
+      comicEngine.clear();
+      currentImage = null;
+      activeAnnotation = null;
+    });
+
+    // Close on backdrop click
+    modalEl.addEventListener('click', (e) => {
+      if (e.target === modalEl) {
+        modalEl.classList.remove('active');
+        comicEngine.clear();
+      }
+    });
+
+    // Export Snapshot with CC-BY overlay
+    document.getElementById('btn-export-snapshot').addEventListener('click', async () => {
+      if (!currentImage || !stageImg) return;
+
+      const btn = document.getElementById('btn-export-snapshot');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ Gerando...';
+      btn.disabled = true;
+
+      try {
+        await exportSnapshot({
+          imgElement: stageImg,
+          balloons: comicEngine.getBalloonsData(),
+          stageElement: stageEl,
+          author: activeAnnotation?.author || '',
+          includeAttribution: true, // Crucial: embeds CC-BY and #acervovivoubatuba
+          attributionText: config.attributionText || '#acervovivoubatuba',
+          licenseText: config.licenseText || 'CC-BY 4.0'
+        });
+        showToast('Snapshot CC-BY gerado com sucesso!');
+      } catch (err) {
+        console.error('Erro ao gerar snapshot:', err);
+        showToast('Falha ao gerar snapshot.', 'error');
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    });
+
+    // Keyboard ESC to close
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modalEl.classList.contains('active')) {
+        modalEl.classList.remove('active');
+        comicEngine.clear();
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+{
+  "name": "acervo-vivo-oficina",
+  "version": "1.0.0",
+  "description": "Acervo Vivo - Web App para oficina de intervenção com balões em registros fotográficos",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "reset": "node scripts/reset_data.js",
+    "download-images": "python3 scripts/download_images.py"
+  },
+  "keywords": [
+    "acervovivo",
+    "ubatuba",
+    "workshop",
+    "comics",
+    "photography",
+    "cc-by"
+  ],
+  "author": "Acervo Vivo",
+  "license": "CC-BY-4.0"
+}

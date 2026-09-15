@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: acervo-vivo-oficina
+    env: node
+    plan: free
+    buildCommand: "echo 'Zero-build ready'"
+    startCommand: "node server.js"
+    envVars:
+      - key: WORKSHOP_TOKEN
+        value: oficina2026
+      - key: NODE_VERSION
+        value: 20

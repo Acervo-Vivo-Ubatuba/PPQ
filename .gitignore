@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary / Backup files
+*.tmp
+data/annotations.backup_*.json
+scratch/
+scratch_*.js
+scratch_*.mjs
