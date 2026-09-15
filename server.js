@@ -230,6 +230,125 @@ function writeMarkdownRecords(annotations, latestEntry = null) {
   }
 }
 
+// --- GITHUB CLOUD PERSISTENCE SYNC ---
+const GITHUB_REPO = process.env.GITHUB_REPO || 'Acervo-Vivo-Ubatuba/PPQ';
+const GITHUB_BRANCH = process.env.GITHUB_BRANCH || 'main';
+
+async function syncFileToGitHub(filePathInRepo, contentUtf8, commitMessage) {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return false;
+
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePathInRepo}`;
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/vnd.github+json',
+      'User-Agent': 'AcervoVivo-App',
+      'X-GitHub-Api-Version': '2022-11-28'
+    };
+
+    let sha = null;
+    try {
+      const getRes = await fetch(url, { headers });
+      if (getRes.ok) {
+        const getData = await getRes.json();
+        sha = getData.sha;
+      }
+    } catch (e) {}
+
+    const base64Content = Buffer.from(contentUtf8, 'utf8').toString('base64');
+    const body = {
+      message: `${commitMessage} [skip render] [skip ci]`,
+      content: base64Content,
+      branch: GITHUB_BRANCH
+    };
+    if (sha) body.sha = sha;
+
+    const putRes = await fetch(url, {
+      method: 'PUT',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (putRes.ok) {
+      console.log(`✓ Sincronizado com GitHub: ${filePathInRepo}`);
+      return true;
+    } else {
+      const errText = await putRes.text();
+      console.warn(`Aviso ao enviar ${filePathInRepo} para o GitHub (${putRes.status}):`, errText);
+      return false;
+    }
+  } catch (err) {
+    console.warn('Erro ao conectar com API do GitHub:', err.message);
+    return false;
+  }
+}
+
+let isSyncing = false;
+let syncQueue = [];
+
+function queueGitHubSync(author, imageId) {
+  if (!process.env.GITHUB_TOKEN) return;
+  syncQueue.push({ author, imageId });
+  processSyncQueue();
+}
+
+async function processSyncQueue() {
+  if (isSyncing || syncQueue.length === 0) return;
+  isSyncing = true;
+
+  try {
+    const last = syncQueue[syncQueue.length - 1];
+    syncQueue = []; // Coalesce pending updates
+
+    const annotations = readAnnotations();
+    const annotationsStr = JSON.stringify(annotations, null, 2);
+    const mdStr = fs.existsSync(ROOT_MARKDOWN_FILE) ? fs.readFileSync(ROOT_MARKDOWN_FILE, 'utf8') : '';
+
+    const msg = `Falas de ${last.author || 'Participante'} em ${last.imageId || 'oficina'}`;
+    await syncFileToGitHub('data/annotations.json', annotationsStr, msg);
+    if (mdStr) {
+      await syncFileToGitHub('REGISTRO_FALAS.md', mdStr, msg);
+    }
+  } catch (err) {
+    console.error('Erro na sincronização em background com GitHub:', err);
+  } finally {
+    isSyncing = false;
+    if (syncQueue.length > 0) {
+      setTimeout(processSyncQueue, 1500);
+    }
+  }
+}
+
+async function syncFromGitHubOnStartup() {
+  const token = process.env.GITHUB_TOKEN;
+  if (!token) return;
+
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/data/annotations.json?ref=${GITHUB_BRANCH}`;
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'User-Agent': 'AcervoVivo-App'
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const content = Buffer.from(data.content, 'base64').toString('utf8');
+      const remoteAnnotations = JSON.parse(content || '[]');
+      if (remoteAnnotations.length > 0) {
+        console.log(`✓ Sincronizado do GitHub na inicialização: ${remoteAnnotations.length} intervenções carregadas.`);
+        writeAnnotations(remoteAnnotations);
+        writeMarkdownRecords(remoteAnnotations);
+      }
+    }
+  } catch (err) {
+    console.warn('Aviso: Não foi possível sincronizar do GitHub na inicialização:', err.message);
+  }
+}
+
 function getImagesList() {
   if (!fs.existsSync(IMAGES_DIR)) return [];
   const files = fs.readdirSync(IMAGES_DIR);
@@ -372,6 +491,7 @@ const server = http.createServer((req, res) => {
 
         writeAnnotations(annotations);
         writeMarkdownRecords(annotations, newEntry);
+        queueGitHubSync(newEntry.author, newEntry.imageId);
         return sendJson(res, 200, { success: true, annotation: newEntry });
       } catch (err) {
         console.error('Error parsing POST /api/annotations:', err);
@@ -403,6 +523,7 @@ const server = http.createServer((req, res) => {
 
     writeAnnotations(annotations);
     writeMarkdownRecords(annotations);
+    queueGitHubSync('Remocao', imageId || 'exclusao');
     return sendJson(res, 200, { success: true, deleted: initialLen - annotations.length });
   }
 
@@ -422,6 +543,7 @@ const server = http.createServer((req, res) => {
 
     writeAnnotations([]);
     writeMarkdownRecords([]);
+    queueGitHubSync('Reset', 'todas');
     return sendJson(res, 200, { success: true, message: 'Banco de dados zerado com sucesso!' });
   }
 
@@ -461,8 +583,11 @@ const server = http.createServer((req, res) => {
   res.end('404 Not Found');
 });
 
-// Generate/sync markdown records initially with existing data
+// Generate/sync markdown records initially with existing data and sync from GitHub on startup
 writeMarkdownRecords(readAnnotations());
+syncFromGitHubOnStartup().then(() => {
+  writeMarkdownRecords(readAnnotations());
+});
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`\n======================================================`);
