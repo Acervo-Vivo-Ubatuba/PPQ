@@ -1,7 +1,7 @@
 # 📜 Acervo Vivo — Registro de Falas e Intervenções dos Participantes
 
 > **Projeto:** Acervo Vivo Ubatuba (#acervovivoubatuba)
-> **Última Atualização:** 15/09/2026, 00:02:44 (Horário de Brasília)
+> **Última Atualização:** 15/09/2026, 00:22:51 (Horário de Brasília)
 > **Total de Intervenções:** 1 | **Total de Balões e Textos:** 1
 
 ---
@@ -18,7 +18,7 @@
 
 | Data / Hora | Participante | Fotografia | Tipo | Texto Inserido | Posição na Imagem |
 | :--- | :--- | :--- | :---: | :--- | :--- |
-| 14/09/2026, 22:02:51 | **Doutor F** | `20260914_162942.jpg` | 💬 Fala | "ué..." | `x: 69.7%, y: 9.4%` (rabicho: bottom-left) |
+| 14/09/2026, 22:02:51 | **Doutor F** | `20260914_162942.jpg` | 💬 Fala | "ué..." | `x: 69.7%, y: 9.4%` (ponta: bottom-left) |
 
 ---
 
@@ -29,7 +29,7 @@
 #### Contribuição #1 — **Doutor F** (*14/09/2026, 22:02:51*)
 - **💬 Fala #1:**
   > "ué..."
-  - *Posição:* `x: 69.7%, y: 9.4%` • *Rabicho:* `bottom-left`
+  - *Posição:* `x: 69.7%, y: 9.4%` • *Ponta:* `bottom-left`
 
 ---
 

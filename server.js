@@ -146,7 +146,7 @@ function generateMarkdownContent(annotations) {
     md += `| - | - | - | - | *Nenhum texto inserido ainda* | - |\n\n`;
   } else {
     allBalloons.forEach(item => {
-      md += `| ${item.date} | **${item.author}** | \`${item.imageId}.jpg\` | ${item.type} | "${item.text}" | \`${item.position}\` (rabicho: ${item.tail}) |\n`;
+      md += `| ${item.date} | **${item.author}** | \`${item.imageId}.jpg\` | ${item.type} | "${item.text}" | \`${item.position}\` (ponta: ${item.tail}) |\n`;
     });
     md += `\n`;
   }
@@ -178,7 +178,7 @@ function generateMarkdownContent(annotations) {
             const icon = b.type === 'thought' ? '💭 Pensamento' : '💬 Fala';
             md += `- **${icon} #${bIdx + 1}:**\n`;
             md += `  > "${b.text || '(vazio)'}"\n`;
-            md += `  - *Posição:* \`x: ${b.x}%, y: ${b.y}%\` • *Rabicho:* \`${b.tailDirection || 'bottom-left'}\`\n`;
+            md += `  - *Posição:* \`x: ${b.x}%, y: ${b.y}%\` • *Ponta:* \`${b.tailDirection || 'bottom-left'}\`\n`;
           });
           md += `\n`;
         }
@@ -210,7 +210,7 @@ function writeMarkdownRecords(annotations, latestEntry = null) {
       eventLog += `- **Balões Inseridos (${latestEntry.balloons.length}):**\n`;
       latestEntry.balloons.forEach((b, i) => {
         const icon = b.type === 'thought' ? '💭 Pensamento' : '💬 Fala';
-        eventLog += `  ${i + 1}. **[${icon}]** "${b.text || '(sem texto)'}" *(x: ${b.x}%, y: ${b.y}%, rabicho: ${b.tailDirection})*\n`;
+        eventLog += `  ${i + 1}. **[${icon}]** "${b.text || '(sem texto)'}" *(x: ${b.x}%, y: ${b.y}%, ponta: ${b.tailDirection})*\n`;
       });
 
       if (!fs.existsSync(HISTORY_LOG_FILE)) {

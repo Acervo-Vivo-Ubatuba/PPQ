@@ -88,7 +88,7 @@ export class ComicEngine {
           ${data.type === 'speech' ? '💭 Pensamento' : '💬 Fala'}
         </button>
         <button type="button" class="balloon-btn toggle-tail" title="Mudar lado da ponta">
-          ⇄ Rabicho
+          ⇄ Ponta
         </button>
         <button type="button" class="balloon-btn delete" title="Excluir balão">
           ✕
